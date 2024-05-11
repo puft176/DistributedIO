@@ -35,21 +35,21 @@ void Modbus_uart2_init(u32 bound){
 	
 	//3、发送接收引脚的设置
 	 //USART2_TX   PA.2（由图 可知设置为推挽复用输出）
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2; //PA.9
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2; //PA.2
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;	//复用推挽输出
-    GPIO_Init(GPIOA, &GPIO_InitStructure); //初始化PA9
+    GPIO_Init(GPIOA, &GPIO_InitStructure); //初始化PA2
    
-    //USART2_RX	  PA.3（有图可知浮空输入）
+    //USART2_RX	  PA.3（有图可知浮空输入）（已改为上拉输入）
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//浮空输入
-    GPIO_Init(GPIOA, &GPIO_InitStructure);  //初始化PA10
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;//上拉输入
+    GPIO_Init(GPIOA, &GPIO_InitStructure);  //初始化PA3
 		
-		//485收发控制引脚PD7
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7; //PA.9
+	//485收发控制引脚PA4
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4; //PA.4
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//普通的推挽输出
-    GPIO_Init(GPIOD, &GPIO_InitStructure); //初始化PA9
+    GPIO_Init(GPIOA, &GPIO_InitStructure); //初始化PA4
 
    //4、USART 初始化设置
 

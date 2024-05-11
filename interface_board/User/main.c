@@ -67,55 +67,66 @@ int main(void)
 	Modbus_TIME3_Init(7200-1,10-1);//定时器初始化参数1是重装载数，参数2是分频系数//1ms中断一次
 	Modbus_Init();//MODBUS初始化--本机做作为从机设备地址，本机要匹配的从机地址
 	while(1)
-	{ 
-		key_Send();//按键扫描
-		if(host_slave_flag==1)//这是按键4按下了，表明是从机模式（led4不停的闪烁）
-		{
-			 Modbus_Event();//Modbus事件处理函数(执行读或者写的判断)--从机地址01
-			 if(Reg[3]==0x0A)//作为从机如果寄存器的地址00 03收到了0x0A数据则打开LED3
-			 {
+	{
+		 Modbus_Event();//Modbus事件处理函数(执行读或者写的判断)--从机地址01
+		 if(Reg[3]==0x0A)//作为从机如果寄存器的地址00 03收到了0x0A数据则打开LED3
+		 {
 //				 LED1=0;
-			 }
-			 if(Reg[3]==0x0B)
-			 {
+		 }
+		 if(Reg[3]==0x0B)
+		 {
 //				 LED1=1;
-			 }
+		 }
 //			LED4=~LED4;
-			Delay_ms(100);
-		}
-		else if(key_flag==0)//表示开机后没有按键按下（主机模式查看从机地址01的数据）
-		{
-		
-				//参数1：查看第i个从机数据
-				Host_Read03_slave(0x01,0x0000,0x0001);//参数2起始地址，参数3寄存器个数
-				if(modbus.Host_send_flag)
-				{
-					modbus.Host_Sendtime=0;//发送完毕后计数清零（距离上次的时间）
-					modbus.Host_time_flag=0;//发送数据标志位清零
-					modbus.Host_send_flag=0;//清空发送结束数据标志位
-				
-					HOST_ModbusRX();//接收数据进行处理
-				}
-//				LED2=~LED2;
-				Delay_ms(1000);
-		}
-		else
-		{
-				if(modbus.Host_time_flag)//每1s发送一次数据
-				{
-					//参数1：查看第i个从机数据
-					Host_Read03_slave(slave,0x0000,0x0003);//，参数2起始地址，参数3寄存器个数
-					if(modbus.Host_send_flag)
-					{
-						modbus.Host_Sendtime=0;//发送完毕后计数清零（距离上次的时间）
-						modbus.Host_time_flag=0;//发送数据标志位清零
-						modbus.Host_send_flag=0;//清空发送结束数据标志位
-						
-						HOST_ModbusRX();//接收数据进行处理
-					}
-//					LED3=~LED3;
-				}
-		}
+		 Delay_ms(100);
+//		key_Send();//按键扫描
+//		if(host_slave_flag==1)//这是按键4按下了，表明是从机模式（led4不停的闪烁）
+//		{
+//			 Modbus_Event();//Modbus事件处理函数(执行读或者写的判断)--从机地址01
+//			 if(Reg[3]==0x0A)//作为从机如果寄存器的地址00 03收到了0x0A数据则打开LED3
+//			 {
+////				 LED1=0;
+//			 }
+//			 if(Reg[3]==0x0B)
+//			 {
+////				 LED1=1;
+//			 }
+////			LED4=~LED4;
+//			Delay_ms(100);
+//		}
+//		else if(key_flag==0)//表示开机后没有按键按下（主机模式查看从机地址01的数据）
+//		{
+//		
+//				//参数1：查看第i个从机数据
+//				Host_Read03_slave(0x01,0x0000,0x0001);//参数2起始地址，参数3寄存器个数
+//				if(modbus.Host_send_flag)
+//				{
+//					modbus.Host_Sendtime=0;//发送完毕后计数清零（距离上次的时间）
+//					modbus.Host_time_flag=0;//发送数据标志位清零
+//					modbus.Host_send_flag=0;//清空发送结束数据标志位
+//				
+//					HOST_ModbusRX();//接收数据进行处理
+//				}
+////				LED2=~LED2;
+//				Delay_ms(1000);
+//		}
+//		else
+//		{
+//			if(modbus.Host_time_flag)//每1s发送一次数据
+//			{
+//				//参数1：查看第i个从机数据
+//				Host_Read03_slave(slave,0x0000,0x0003);//，参数2起始地址，参数3寄存器个数
+//				if(modbus.Host_send_flag)
+//				{
+//					modbus.Host_Sendtime=0;//发送完毕后计数清零（距离上次的时间）
+//					modbus.Host_time_flag=0;//发送数据标志位清零
+//					modbus.Host_send_flag=0;//清空发送结束数据标志位
+//					
+//					HOST_ModbusRX();//接收数据进行处理
+//				}
+////				LED3=~LED3;
+//			}
+//		}
 	}
 }
 

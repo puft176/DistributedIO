@@ -6,6 +6,8 @@
 #define USART_REC_LEN  			200  	//定义最大接收字节数 200
 #define EN_USART1_RX 			1		//使能（1）/禁止（0）串口1接收
 
+#define Serial_RxPacket		table_data
+#define Serial_RxPacket_cp		table_cp
 
 extern u8 table_data[9];//这是提前定义一个数组存放接收到的数据
 extern u8 table_cp[9];//这是额外定义一个数组，将接收到的数据复制到这里面

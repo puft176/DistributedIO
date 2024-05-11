@@ -28,7 +28,7 @@ struct __FILE
 
 FILE __stdout;       
 //定义_sys_exit()以避免使用半主机模式    
-_sys_exit(int x) 
+void _sys_exit(int x)
 { 
 	x = x; 
 } 
@@ -69,9 +69,6 @@ u16 count=0;//接收数据计数
  
 #if EN_USART1_RX   //如果使能了接收
 
-
-
-
 //初始化IO 串口1 
 //bound:波特率
 void uart_init(u32 bound){
@@ -80,7 +77,8 @@ void uart_init(u32 bound){
 	USART_InitTypeDef USART_InitStructure;//串口结构体指针
 	NVIC_InitTypeDef NVIC_InitStructure;//中断分组结构体指针
 	//1、使能串口时钟，串口引脚时钟 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|RCC_APB2Periph_GPIOA, ENABLE);	//使能USART1，GPIOA时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);	//开启USART1的时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);	//开启GPIOA的时钟
 		
 	//2、复位串口	
 	USART_DeInit(USART1);  //复位串口1
@@ -92,9 +90,9 @@ void uart_init(u32 bound){
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;	//复用推挽输出
     GPIO_Init(GPIOA, &GPIO_InitStructure); //初始化PA9
    
-    //USART1_RX	  PA.10（有图可知浮空输入）
+    //USART1_RX	  PA.10（有图可知浮空输入）（已改为上拉输入）
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//浮空输入
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;//上拉输入
     GPIO_Init(GPIOA, &GPIO_InitStructure);  //初始化PA10
 
 
@@ -131,7 +129,12 @@ void uart_init(u32 bound){
 //当uint8_t的8位数据传递给uint16_t的16位数据时，会自动强制类型转换
 
 
-//串口发送一个字节的数据函数（一个字节是8位数据，定义的参数变量是一个8位的）
+/**
+  * 函    数：串口发送一个字节
+  * 参    数：pUSARTx 可以为USART1, USART2, USART3
+  * 参    数：Byte 要发送的一个字节
+  * 返 回 值：无
+  */
 void Usart_SendByte(USART_TypeDef* pUSARTx,uint8_t data)//每次只能发送8位的数据
 {
 	//调用固件库函数
@@ -148,9 +151,14 @@ void Usart_SendByte(USART_TypeDef* pUSARTx,uint8_t data)//每次只能发送8位
 
 //有时候传感器数据可能是16位的，怎么发送？发送两个字节
 //发送两个字节的数据就是十六位的
-//半字表示16位，两个字节，，参数2是十六位的数据
+//半字表示16位，两个字节，参数2是十六位的数据
 
-//发送两个字节数据函数
+/**
+  * 函    数：串口发送两个字节
+  * 参    数：pUSARTx 可以为USART1, USART2, USART3
+  * 参    数：Byte 要发送的两个字节
+  * 返 回 值：无
+  */
 void Usart_SendHalfWord(USART_TypeDef* pUSARTx,uint16_t data)
 {
 	//发送十六位数据要分为两次来发送，先定义两个变量
@@ -176,7 +184,13 @@ void Usart_SendHalfWord(USART_TypeDef* pUSARTx,uint16_t data)
 //发送8位数据的数组--需要写一个循环来调用发送一个字节的函数即可
 //数组的话传进来的就是一个指针了
 
-//发送一个数组数据
+/**
+  * 函    数：串口发送一个数组
+  * 参    数：pUSARTx 可以为USART1, USART2, USART3
+  * 参    数：array 要发送数组的首地址
+  * 参    数：num 要发送数组的长度
+  * 返 回 值：无
+  */
 void Usart_SendArray(USART_TypeDef* pUSARTx,uint8_t *array,uint8_t num)
 {
 	//每次想要发送多少数据，通过形参num传进来，num定义的是8位的，那么函数最多发送255个
@@ -194,7 +208,12 @@ void Usart_SendArray(USART_TypeDef* pUSARTx,uint8_t *array,uint8_t num)
 
 
 
-//发送字符串
+/**
+  * 函    数：串口发送一个字符串
+  * 参    数：pUSARTx 可以为USART1, USART2, USART3
+  * 参    数：String 要发送字符串的首地址
+  * 返 回 值：无
+  */
 void Usart_SendStr(USART_TypeDef* pUSARTx,uint8_t *str)//指定串口，要发送的字符串内容
 {
 	uint8_t i=0;
@@ -207,6 +226,7 @@ void Usart_SendStr(USART_TypeDef* pUSARTx,uint8_t *str)//指定串口，要发�
 	//如果='\0'表示发送完毕
 	while(USART_GetFlagStatus(pUSARTx,USART_FLAG_TC)==RESET);//等待发送完毕
 }
+
 
 
 

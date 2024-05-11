@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>.\Start;.\Library;.\User;.\System;.\Hardware</IncludePath>
+              <IncludePath>.\Start;.\Library;.\User;.\System;.\Hardware;.\Hardware\MODBUS;.\Hardware\RS485;.\Hardware\usart;.\Hardware\usart</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -660,6 +660,61 @@
               <FileType>5</FileType>
               <FilePath>.\System\Delay.h</FilePath>
             </File>
+            <File>
+              <FileName>sys.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\System\sys.c</FilePath>
+            </File>
+            <File>
+              <FileName>sys.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\System\sys.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>modbus</GroupName>
+          <Files>
+            <File>
+              <FileName>modbus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\MODBUS\modbus.c</FilePath>
+            </File>
+            <File>
+              <FileName>modbus.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\MODBUS\modbus.h</FilePath>
+            </File>
+            <File>
+              <FileName>modbus_crc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\MODBUS\modbus_crc.c</FilePath>
+            </File>
+            <File>
+              <FileName>modbus_crc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\MODBUS\modbus_crc.h</FilePath>
+            </File>
+            <File>
+              <FileName>modbus_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\MODBUS\modbus_timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>modbus_timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\MODBUS\modbus_timer.h</FilePath>
+            </File>
+            <File>
+              <FileName>rs485.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\RS485\rs485.c</FilePath>
+            </File>
+            <File>
+              <FileName>rs485.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\RS485\rs485.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -699,6 +754,16 @@
               <FileName>OLED_Font.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Hardware\OLED_Font.h</FilePath>
+            </File>
+            <File>
+              <FileName>usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\usart\usart.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\usart\usart.h</FilePath>
             </File>
           </Files>
         </Group>

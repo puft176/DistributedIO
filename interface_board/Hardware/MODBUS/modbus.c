@@ -24,8 +24,12 @@ void Modbus_Init()
 	modbus.timrun = 0;    //modbus定时器停止计算
 	modbus.slave_add=0x01;//作为主机时要匹配的从机地址
 }
-// Modbus 3号功能码函数
-// Modbus 主机读取寄存器值
+
+/**
+  * 函  数：Modbus 3号功能码函数，对40001-49999地址的随机读访问
+  * 参  数：无
+  * 返回值：无
+  */
 void Modbus_Func3()
 {
     u16 Regadd,Reglen,crc;
@@ -50,24 +54,30 @@ void Modbus_Func3()
 	modbus.sendbuf[i++] = crc%256;//校验位低位
 	//数据包打包完成
 	// 开始返回Modbus数据
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
 	//发送重新使能
 	RS485_TX_ENABLE;//使能485控制端(启动发送) 
 	DMA_TX_Enable(1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
 	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
-	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据
+	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
 	RS485_RX_ENABLE;//开启接收
 	//接收重新使能
 	DMA_RX_Enable();
 }
 
 
-// Modbus 6号功能码函数
-// Modbus 主机写入寄存器值
+/**
+  * 函  数：Modbus 6号功能码函数，对40001-49999地址的随机写访问
+  * 参  数：无
+  * 返回值：无
+  */
 void Modbus_Func6()  
 {
-	u16 Regadd;//地址16位
-	u16 val;//值
-	u16 i,crc,j;
+	u16 Regadd; //地址16位
+	u16 val;	//值
+	u16 i,crc;
 	i=0;
 	Regadd=modbus.rcbuf[2]*256+modbus.rcbuf[3];  //得到要修改的地址 
 	val=modbus.rcbuf[4]*256+modbus.rcbuf[5];     //修改后的值（要写入的数据）
@@ -84,21 +94,29 @@ void Modbus_Func6()
 	modbus.sendbuf[i++]=crc/256;  //crc校验位加入包中
 	modbus.sendbuf[i++]=crc%256;
 	//数据发送包打包完毕
-	RS485_TX_ENABLE;;//使能485控制端(启动发送)  
-	for(j=0;j<i;j++)
-	{
-	 Usart_SendByte(USART1,modbus.sendbuf[j]);
-	}
-	RS485_RX_ENABLE;//失能485控制端（改为接收）
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
+	
+	RS485_TX_ENABLE;;	//使能485控制端(启动发送) 
+	DMA_TX_Enable(1);	//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//	Delay_ms(5);		//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;	//失能485控制端（改为接收）
+	//接收重新使能
+	DMA_RX_Enable();
 }
 
-//这是往多个寄存器器中写入数据
-//功能码0x10指令即十进制16
+/**
+  * 函  数：功能码16 0x10，对40001-49999地址的随机写访问，访问长度2-120
+  * 参  数：无
+  * 返回值：无
+  */
 void Modbus_Func16()
 {
 		u16 Regadd;//地址16位
 		u16 Reglen;
-		u16 i,crc,j;
+		u16 i,crc;
 		
 		Regadd=modbus.rcbuf[2]*256+modbus.rcbuf[3];  //要修改内容的起始地址
 		Reglen = modbus.rcbuf[4]*256+modbus.rcbuf[5];//读取的寄存器个数
@@ -121,13 +139,17 @@ void Modbus_Func16()
 		modbus.sendbuf[6]=crc/256;  //crc校验位加入包中
 		modbus.sendbuf[7]=crc%256;
 		//数据发送包打包完毕
+		while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+		modbus.Host_time_flag=0;
+		modbus.Host_Sendtime=0;//计时标志位清零
 		
-		RS485_TX_ENABLE;;//使能485控制端(启动发送)  
-		for(j=0;j<8;j++)
-		{
-			Usart_SendByte(USART1,modbus.sendbuf[j]);
-		}
-		RS485_RX_ENABLE;//失能485控制端（改为接收）
+		RS485_TX_ENABLE;		//使能485控制端(启动发送) 
+		DMA_TX_Enable(Reglen);	//发送重新使能,重装发送数据个数,此时数据已经开始发送
+		while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//		Delay_ms(5);			//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+		RS485_RX_ENABLE;		//失能485控制端（改为接收）
+		//接收重新使能
+		DMA_RX_Enable();
 }
 
 /*****************************
@@ -165,7 +187,7 @@ void Modbus_Event()
 			 {
 				 case 1:             break;
 				 case 2:             break;
-				 case 3:      Modbus_Func3();LED1_ON();      break;//这是读取寄存器的数据
+				 case 3:      Modbus_Func3();     break;//这是读取寄存器的数据
 				 case 4:             break;
 				 case 5:             break;
 				 case 6:      Modbus_Func6();      break;//这是写入单个寄存器数据

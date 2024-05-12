@@ -44,23 +44,23 @@ Modbus 超时接收
 //void Modbus_TIM_IRQHandler(void)  
 void TIM3_IRQHandler(void)   //TIM3中断
 {
-	if (TIM_GetITStatus(TIM3, TIM_IT_Update) == SET) //检查是否是指定的中断源产生的中断
+	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) //检查指定的TIM中断发生与否:TIM 中断源 
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);  //清除TIMx的中断待处理位:TIM 中断源 
-//		if(modbus.timrun == 1)//运行时=1表明
-//		{
-//			modbus.timout++;
-//			if(modbus.timout >=8)
-//			{
-//				modbus.timrun = 0;
-//				modbus.reflag = 1;//接收数据完毕
-//			}
-//		}
-		modbus.Host_Sendtime++;//发送完上一帧后的时间计数
-		if(modbus.Host_Sendtime>1000)//距离发送上一帧数据1s了
-		{
-			//1s时间到
-			modbus.Host_time_flag=1;//发送数据标志位置1
-		}
+//		if(modbus.timrun!=0)//运行时间！=0表明
+//		 {
+//		  modbus.timout++;
+//			 if(modbus.timout >=100)//表明没有接收到数据需要再次发送
+//		  {
+//			
+//				modbus.timout=0;
+//				modbus.Host_out_flag=1;//超时未接收到数据重新发送数据
+//		  }		
+//	     }
+		 modbus.Host_Sendtime++;//发送完上一帧后的时间计数
+		 if(modbus.Host_Sendtime>1000)//距离发送上一帧数据1s了
+			{
+					modbus.Host_time_flag=1;			
+			}
 	}
 }

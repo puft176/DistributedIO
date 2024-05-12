@@ -47,15 +47,15 @@ void TIM3_IRQHandler(void)   //TIM3中断
 	if (TIM_GetITStatus(TIM3, TIM_IT_Update) == SET) //检查是否是指定的中断源产生的中断
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);  //清除TIMx的中断待处理位:TIM 中断源 
-		if(modbus.timrun != 0)//运行时间！=0表明
-		{
-			modbus.timout++;
-			if(modbus.timout >=8)
-			{
-				modbus.timrun = 0;
-				modbus.reflag = 1;//接收数据完毕
-			}
-		}
+//		if(modbus.timrun == 1)//运行时=1表明
+//		{
+//			modbus.timout++;
+//			if(modbus.timout >=8)
+//			{
+//				modbus.timrun = 0;
+//				modbus.reflag = 1;//接收数据完毕
+//			}
+//		}
 		modbus.Host_Sendtime++;//发送完上一帧后的时间计数
 		if(modbus.Host_Sendtime>1000)//距离发送上一帧数据1s了
 		{

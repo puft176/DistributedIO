@@ -1,22 +1,18 @@
 #include "modbus.h"
 #include "usart.h"
-#include	"delay.h"
+#include "delay.h"
 #include "led.h"
+#include "dma.h"
 MODBUS modbus;//结构体变量
 
 
 /*作为从机部分的代码*/
-
-u16 Reg[] ={0x0001,
-            0x0002,
-            0x0003,
-            0x0004,
-	        0x0005,
-            0x0006,
-            0x0007,
-			0X0008,
-           };//reg是提前定义好的寄存器和寄存器数据，要读取和改写的部分内容
-
+//开关量寄存器 0x0000 为OFF，0xFF00 为ON，其他所有值均为非法
+u16 Reg0[100] = {0x0000};//    0~ 9999
+u16 Reg1[100] = {0x0000};//10000~19999
+//16bit寄存器
+u16 Reg3[100] ={0x0000};// 30000~39999
+u16 Reg4[100] ={0x0000};// 40000~49999
 /**
   *@brief Modbus初始化函数
   *@param 无
@@ -32,7 +28,7 @@ void Modbus_Init()
 // Modbus 主机读取寄存器值
 void Modbus_Func3()
 {
-  u16 Regadd,Reglen,crc;
+    u16 Regadd,Reglen,crc;
 	u8 i,j;
 	//得到要读取寄存器的首地址 0~65535
 	Regadd = modbus.rcbuf[2]*256+modbus.rcbuf[3];//读取的首地址
@@ -46,22 +42,22 @@ void Modbus_Func3()
 	for(j=0;j<Reglen;j++)					 //返回数据
 	{
 		//reg是提前定义好的16位数组（模仿寄存器）
-		modbus.sendbuf[i++] = Reg[Regadd+j]/256;//高位数据
-		modbus.sendbuf[i++] = Reg[Regadd+j]%256;//低位数据
+		modbus.sendbuf[i++] = Reg4[Regadd+j]/256;//高位数据
+		modbus.sendbuf[i++] = Reg4[Regadd+j]%256;//低位数据
 	}
 	crc = Modbus_CRC16(modbus.sendbuf,i);    //计算要返回数据的CRC
 	modbus.sendbuf[i++] = crc/256;//校验位高位
 	modbus.sendbuf[i++] = crc%256;//校验位低位
 	//数据包打包完成
 	// 开始返回Modbus数据
-	
-	RS485_TX_ENABLE;			//使能485控制端(启动发送)
-	
-	for(j=0;j<i;j++)			//发送数据
-	{
-	  Usart_SendByte(USART1,modbus.sendbuf[j]);	
-	}
-	RS485_RX_ENABLE;			//失能485控制端(改为接收)
+	//发送重新使能
+	RS485_TX_ENABLE;//使能485控制端(启动发送) 
+	DMA_TX_Enable(1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据
+	RS485_RX_ENABLE;//开启接收
+	//接收重新使能
+	DMA_RX_Enable();
 }
 
 
@@ -75,7 +71,7 @@ void Modbus_Func6()
 	i=0;
 	Regadd=modbus.rcbuf[2]*256+modbus.rcbuf[3];  //得到要修改的地址 
 	val=modbus.rcbuf[4]*256+modbus.rcbuf[5];     //修改后的值（要写入的数据）
-	Reg[Regadd]=val;  //修改本设备相应的寄存器
+	Reg4[Regadd]=val;  //修改本设备相应的寄存器
 	
 	//以下为回应主机
 	modbus.sendbuf[i++]=modbus.myadd;//本设备地址
@@ -109,7 +105,7 @@ void Modbus_Func16()
 		for(i=0;i<Reglen;i++)//往寄存器中写入数据
 		{
 			//接收数组的第七位开始是数据
-			Reg[Regadd+i]=modbus.rcbuf[7+i*2]*256+modbus.rcbuf[8+i*2];//对寄存器一次写入数据
+			Reg4[Regadd+i]=modbus.rcbuf[7+i*2]*256+modbus.rcbuf[8+i*2];//对寄存器一次写入数据
 		}
 		//写入数据完毕，接下来需要进行打包回复数据了
 		
@@ -155,6 +151,7 @@ void Modbus_Event()
 	//收到数据包(接收完成)
 	//通过读到的数据帧计算CRC
 	//参数1是数组首地址，参数2是要计算的长度（除了CRC校验位其余全算）
+//	LED1_ON();
 	crc = Modbus_CRC16(&modbus.rcbuf[0],modbus.recount-2); //获取CRC校验位
 	// 读取数据帧的CRC
 	rccrc = modbus.rcbuf[modbus.recount-2]*256+modbus.rcbuf[modbus.recount-1];//计算读取的CRC校验位
@@ -170,7 +167,7 @@ void Modbus_Event()
 			 {
 				 case 1:             break;
 				 case 2:             break;
-				 case 3:      Modbus_Func3();      break;//这是读取寄存器的数据
+				 case 3:      Modbus_Func3();LED1_ON();      break;//这是读取寄存器的数据
 				 case 4:             break;
 				 case 5:             break;
 				 case 6:      Modbus_Func6();      break;//这是写入单个寄存器数据
@@ -184,7 +181,7 @@ void Modbus_Event()
 		    
 		 }	 
 	}
-	modbus.recount = 0;//接收计数清零
+//	modbus.recount = 0;//接收计数清零
     modbus.reflag = 0; //接收标志清零
 }
 //作为从机部分内容结束
@@ -214,6 +211,8 @@ void Host_Read03_slave(uint8_t slave,uint16_t StartAddr,uint16_t num)
 	modbus.Host_Txbuf[6]=crc/256;//寄存器个数高位	？
 	modbus.Host_Txbuf[7]=crc%256;//寄存器个数低位
 	
+	/***************
+	使用DMA转运时不再需要手动将数据送到串口进行发送
 	//发送数据包装完毕
 	RS485_TX_ENABLE;//使能485控制端(启动发送) 
 	for(j=0;j<8;j++)
@@ -222,6 +221,7 @@ void Host_Read03_slave(uint8_t slave,uint16_t StartAddr,uint16_t num)
 	}
 	RS485_RX_ENABLE;//失能485控制端（改为接收）
 	modbus.Host_send_flag=1;//表示发送数据完毕
+	****************/
 }
 
 //第三个是字节个数
@@ -243,6 +243,24 @@ void Host_Func3()
 	}
 	modbus.Host_End=1;//接收的数据处理完毕
 }
+
+//向一个寄存器中写数据的参数设置
+void Host_write06_slave(uint8_t slave,uint8_t fun,uint16_t StartAddr,uint16_t num)
+{
+	u16 crc;//计算的CRC校验位
+	modbus.slave_add=slave;//从机地址赋值一下，后期有用
+	modbus.Host_Txbuf[0]=slave;//这是要匹配的从机地址
+	modbus.Host_Txbuf[1]=fun;//功能码
+	modbus.Host_Txbuf[2]=StartAddr/256;//起始地址高位
+	modbus.Host_Txbuf[3]=StartAddr%256;//起始地址低位
+	modbus.Host_Txbuf[4]=num/256;
+	modbus.Host_Txbuf[5]=num%256;
+	crc=Modbus_CRC16(&modbus.Host_Txbuf[0],6); //获取CRC校验位
+	modbus.Host_Txbuf[6]=crc/256;//寄存器个数高位
+	modbus.Host_Txbuf[7]=crc%256;//寄存器个数低位
+
+}
+
 
 //主机接收从机的消息进行处理
 void HOST_ModbusRX()
@@ -268,7 +286,7 @@ void HOST_ModbusRX()
 		 }
 		 
 	}	
-	 modbus.recount = 0;//接收计数清零
+//	 modbus.recount = 0;//接收计数清零
    modbus.reflag = 0; //接收标志清零
 	
 }
@@ -276,21 +294,22 @@ void HOST_ModbusRX()
 //modbus串口中断服务程序
 void USART1_IRQHandler(void)                
 {
-    u8 Res;
+//    u8 Res;
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) == SET)//接收中断
 	{
-		Res =USART_ReceiveData(USART1);	//读取接收到的数据
-//	    USART_SendData(USART1, Res);//接受到数据之后返回给串口1
-		if(modbus.reflag==1)  //上一个数据包接收完毕正在处理
-		{
-			return ;
-		}
-		modbus.rcbuf[modbus.recount++] = Res;//recount: modbus端口接收到的数据个数
-		modbus.timout = 0;					 //timout: modbus数据持续时间
-		if(modbus.recount == 1)  //已经收到了第二个字符数据
-		{
-			modbus.timrun = 1;  //开启modbus定时器计时
-		}
+//		Res =USART_ReceiveData(USART1);	//读取接收到的数据
+////	    USART_SendData(USART1, Res);//接受到数据之后返回给串口1
+//		if(modbus.reflag==1)  //上一个数据包接收完毕正在处理
+//		{
+//			return ;
+//		}
+//		modbus.rcbuf[modbus.recount++] = Res;//recount: modbus端口接收到的数据个数
+//		modbus.timout = 0;					 //timout: modbus数据持续时间
+//		if(modbus.recount == 1)  //已经收到了第二个字符数据
+//		{
+//			modbus.timrun = 1;  //开启modbus定时器计时
+//		}
+//		LED1_ON();
 	}	
 } 
 

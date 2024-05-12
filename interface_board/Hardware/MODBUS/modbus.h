@@ -5,6 +5,9 @@
 #include "modbus_timer.h"
 #include "rs485.h"
 
+#define find_addr   0x01  //这是要查询的从机地址
+#define start_addr  0x0000	//这是读取寄存器数值的起始地址
+#define read_num    2	//这是查看寄存器的个数（如果想要DMA接收数据，接收的数据个数：read_num*2+5）
 
 typedef struct
 {
@@ -42,7 +45,7 @@ typedef struct
 
 
 extern MODBUS modbus;
-extern u16 Reg[];
+extern u16 Reg0[100],Reg1[100],Reg3[100],Reg4[100];
 void Modbus_Init(void);
 void Modbus_Func3(void);//读寄存器数据
 void Modbus_Func6(void);//往1个寄存器中写入数据
@@ -53,6 +56,7 @@ void Modbus_Event(void);
 
 //void Host_send03(void);
 void Host_Read03_slave(uint8_t slave,uint16_t StartAddr,uint16_t num);
+void Host_write06_slave(uint8_t slave,uint8_t fun,uint16_t StartAddr,uint16_t num);
 void Host_RX(void);
 //主机接收从机的消息进行处理
 void HOST_ModbusRX(void);

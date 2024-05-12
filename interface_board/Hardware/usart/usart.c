@@ -2,6 +2,10 @@
 #include "usart.h"	  
 #include "stdio.h"
 #include "string.h"
+#include "modbus.h"
+#include <string.h>
+#include <stdio.h>
+#include "led.h"
 //getchar()等价于scanf()函数
 //如果使用getchar函数也需要重新定义
 
@@ -115,9 +119,9 @@ void uart_init(u32 bound){
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
 	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器
    
-   //6、开启接收数据中断，使用DMA转运不需要开启中断
+   //6、开启接收数据中断，使用DMA转运开启空闲帧中断
 //    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);//开启中断
-	
+    USART_ITConfig(USART1, USART_IT_IDLE, ENABLE);
 #endif
 	//7、使能串口
     USART_Cmd(USART1, ENABLE);                    //使能串口 
@@ -201,6 +205,14 @@ void Usart_SendArray(USART_TypeDef* pUSARTx,uint8_t *array,uint8_t num)
 		//Usart_SendByte(USART1,*array++);
 		Usart_SendByte(USART1,array[i]);//每次只能发送8位数据
 	}
+	
+    //字符串末尾加换行\r\n
+    char enter_str[] = {'\r', '\n'};
+    for (i = 0; i < 2; i++)
+    {
+        Usart_SendByte(pUSARTx, enter_str[i]);
+    }
+	
 	while(USART_GetFlagStatus(pUSARTx,USART_FLAG_TC)==RESET);//等待发送完毕
 }
 //判断发送一个字节的数据标志位：USART_FLAG_TXE
@@ -224,73 +236,42 @@ void Usart_SendStr(USART_TypeDef* pUSARTx,uint8_t *str)//指定串口，要发�
 		i++;
 	}while(*(str+i)!='\0');//最后结尾不等于'\0'为真，继续发送
 	//如果='\0'表示发送完毕
+	
+    //字符串末尾加换行\r\n
+    char enter_str[] = {'\r', '\n'};
+    for (i = 0; i < 2; i++)
+    {
+        Usart_SendByte(pUSARTx, enter_str[i]);
+    }
+	
 	while(USART_GetFlagStatus(pUSARTx,USART_FLAG_TC)==RESET);//等待发送完毕
 }
 
+//串口1中断函数
+void USART1_IRQHandler(void)
+{
+    //判断是否为空闲中断
+    if (USART_GetITStatus(USART1, USART_IT_IDLE) == SET)
+    {
+        //数据接收完毕标志置1
+        modbus.reflag = 1;
+		
+        //关闭DMA，准备重新配置
+        DMA_Cmd(DMA1_Channel5, DISABLE);
+        //clear DMA1 Channel5 global interrupt.
+        DMA_ClearITPendingBit(DMA1_IT_GL5);
+        //计算接收数据长度
+        modbus.recount = 100 - DMA_GetCurrDataCounter(DMA1_Channel5);
+        memcpy((void *)modbus.rcbuf2, (void *)modbus.rcbuf, modbus.recount);
+        //重新配置
+        DMA_SetCurrDataCounter(DMA1_Channel5, Buff_Size);
+        DMA_Cmd(DMA1_Channel5, ENABLE);
 
-
-
-////中断服务函数（串口助手发送什么数据，就会返回什么数据）
-//void USART1_IRQHandler() 
-//{
-//	u8 ucTemp;
-//	if(USART_GetFlagStatus(USART1,USART_IT_RXNE)!=RESET)
-//	{
-//		ucTemp=USART_ReceiveData(USART1);
-//		USART_SendData(USART1, ucTemp);
-//	}
-//}
-
-
-
-////使用自定义协议接收十六进制数据
-
-//void USART1_IRQHandler(void)                	//串口1中断服务程序
-//{
-//		u8 Res,i;
-//		if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)  //接收中断
-//		{
-//			Res =USART_ReceiveData(USART1);//(USART1->DR);	//读取接收到的数据
-//			
-//			if(count==0)//如果是接收的第一个数据
-//			{
-//				table_data[count]=Res;//将第一个数据存到数据中第一元素
-//				if(table_data[0]==0x2c)//判断接收的第一个数据是不是十六进制0X2C
-//				  count++;//如果第一个数据是0X2C则表示正确计数+1
-//			}
-//			else if(count==1)//第一个数据接收正确的情况下，判断第二个数据
-//			{
-//				if(Res==0xe4)//如果刚接收的数据是0xE4则表示数据正确
-//				{
-//					table_data[count]=Res;//将数据储存到数组第二个元素位置
-//					count++;//接收数据计数+1
-//				}
-//				else//如果第二个字符不是0XE4则计数清零，重新接收
-//					count=0;
-//			}
-//			else if(count==2&&Res==0)//如果前两个数据正确，接收的第三个数据是0，则清零计数，重新接收数据
-//			{
-//				count=0;
-//			}
-//			else if(count>1&&count<9)//这是可以接收数据的范围，只要count在数据可接收数据范围内即可进行存入数据
-//			{
-//				table_data[count]=Res;
-//				count++;
-//			}
-//			else if(count>=9)//如果接收数据超过数组大小，则清零重新接收
-//			{
-//				count=0;
-//			}		
-//   } 
-//	 
-//		memset(table_cp, 0, sizeof(table_data));//在使用数组table_cp时清空
-//		for(i=0;i<9;i++)//把接收到的数据复制到table_cp数组中
-//		{
-//			 table_cp[i]= table_data[i];
-//		
-//	}
-//} 
-
+        //清除IDLE标志位
+        USART1->SR;
+        USART1->DR;
+    }
+}
 
 
 #endif	

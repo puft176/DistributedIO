@@ -83,7 +83,7 @@ void USART1_DMA_RX_config(void)
 	//DMA_DIR_PeripheralDST	外设作为数据传输的目的地
 	//DMA_DIR_PeripheralSRC	外设作为数据传输的来源
 
-	DMA_InitStruct.DMA_BufferSize= 8;//传输数目（数组的长度）
+	DMA_InitStruct.DMA_BufferSize= Buff_Size;//传输数目（数组的长度）
 	
 	//只有一个串口数据寄存器不需要递增，数组是U8类型,所以一次传输一个字节
 	DMA_InitStruct.DMA_PeripheralInc=DMA_PeripheralInc_Disable ;//外设地址b不需要递增
@@ -119,40 +119,44 @@ void USART1_DMA_RX_config(void)
   */
 void DMA_RX_Enable()
 {
-	//重新装入要发送的字符数并使能
-	DMA_Cmd (DMA1_Channel5,DISABLE);//关闭DMA通道
-	DMA_ClearFlag(DMA1_FLAG_TC5);//清标志
-	DMA_SetCurrDataCounter(DMA1_Channel5,8);//重置传输数目
-	DMA_Cmd (DMA1_Channel5,ENABLE);//开启DMA通道
-
+	//关闭DMA，准备重新配置
+	DMA_Cmd(DMA1_Channel5, DISABLE);
+	//clear DMA1 Channel5 global interrupt.
+	DMA_ClearITPendingBit(DMA1_IT_GL5);
+	//计算接收数据长度
+	count = 100 - DMA_GetCurrDataCounter(DMA1_Channel5);
+	memcpy((void *)modbus.rcbuf2, (void *)modbus.rcbuf, count);
+	//重新配置
+	DMA_SetCurrDataCounter(DMA1_Channel5, Buff_Size);
+	DMA_Cmd(DMA1_Channel5, ENABLE);
 }
 
 /**
   * 函  数：DMA重装传输数目并使能，5+寄存器个数*2
-  * 参  数：无
-  * 返回值：无
+  * 参  数：无       
+  * 返回值：无       
   */
 void DMA_TX_Enable(uint8_t num)//num寄存器的个数
 {
 		DMA_Cmd(DMA1_Channel4,DISABLE);
 		DMA_ClearFlag(DMA1_FLAG_TC4);//先将这个接收标志位清除
-		DMA_SetCurrDataCounter(DMA1_Channel4, num*2+5); //这是从机返回的字符个数：read_num*2+5
+		DMA_SetCurrDataCounter(DMA1_Channel4, num); //这是从机返回的字符个数：read_num*2+5
 		DMA_Cmd(DMA1_Channel4, ENABLE);
 }
 
 
 /*以下为从机函数*/
 
-//DMA接收中断
-void DMA1_Channel5_IRQHandler()
-{
-	if(DMA_GetITStatus(DMA1_IT_TC5))
-    {
-		modbus.reflag = 1;//表明接收数据完毕
-		modbus.recount = 8;
-        DMA_ClearITPendingBit(DMA1_IT_GL5); //清除全部中断标志
-    }
-}
+////DMA接收中断
+//void DMA1_Channel5_IRQHandler()
+//{
+//	if(DMA_GetITStatus(DMA1_IT_TC5))
+//    {
+//		modbus.reflag = 1;//表明接收数据完毕
+//		modbus.recount = 8;
+//        DMA_ClearITPendingBit(DMA1_IT_GL5); //清除全部中断标志
+//    }
+//}
 
 ////DMA接收中断
 //void DMA1_Channel4_IRQHandler()

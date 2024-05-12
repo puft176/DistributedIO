@@ -59,7 +59,7 @@ void Modbus_Func3()
 	modbus.Host_Sendtime=0;//计时标志位清零
 	//发送重新使能
 	RS485_TX_ENABLE;//使能485控制端(启动发送) 
-	DMA_TX_Enable(1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	DMA_TX_Enable(5+2*1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
 	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
 	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
 	RS485_RX_ENABLE;//开启接收
@@ -99,7 +99,7 @@ void Modbus_Func6()
 	modbus.Host_Sendtime=0;//计时标志位清零
 	
 	RS485_TX_ENABLE;;	//使能485控制端(启动发送) 
-	DMA_TX_Enable(1);	//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	DMA_TX_Enable(8);	//发送重新使能,重装发送数据个数,此时数据已经开始发送
 	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
 //	Delay_ms(5);		//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
 	RS485_RX_ENABLE;	//失能485控制端（改为接收）
@@ -144,7 +144,7 @@ void Modbus_Func16()
 		modbus.Host_Sendtime=0;//计时标志位清零
 		
 		RS485_TX_ENABLE;		//使能485控制端(启动发送) 
-		DMA_TX_Enable(Reglen);	//发送重新使能,重装发送数据个数,此时数据已经开始发送
+		DMA_TX_Enable(8);		//发送重新使能,重装发送数据个数,此时数据已经开始发送
 		while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
 //		Delay_ms(5);			//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
 		RS485_RX_ENABLE;		//失能485控制端（改为接收）
@@ -170,6 +170,7 @@ void Modbus_Event()
 	{
 	   return;
 	}
+	
 	//收到数据包(接收完成)
 	//通过读到的数据帧计算CRC
 	//参数1是数组首地址，参数2是要计算的长度（除了CRC校验位其余全算）
@@ -180,6 +181,7 @@ void Modbus_Event()
 	//rccrc=modbus.rcbuf[modbus.recount-1]|(((u16)modbus.rcbuf[modbus.recount-2])<<8);//获取接收到的CRC
 	if(crc == rccrc) //CRC检验成功 开始分析包
 	{	
+		LED1_ON();
 	   if(modbus.rcbuf[0] == modbus.myadd)  // 检查地址是否时自己的地址
 		 {
 			 
@@ -201,7 +203,7 @@ void Modbus_Event()
 		    
 		 }	 
 	}
-//	modbus.recount = 0;//接收计数清零
+	modbus.recount = 0;//接收计数清零
     modbus.reflag = 0; //接收标志清零
 }
 //作为从机部分内容结束

@@ -32,7 +32,6 @@ int main(void)
 	Reg4[1] = 0x0F0F;
 	while(1)
 	{
-		
 		 Modbus_Event();//Modbus事件处理函数(执行读或者写的判断)--从机地址01
 		 if(Reg4[3]==0x0A)//作为从机如果寄存器的地址00 03收到了0x0A数据则打开LED3
 		 {

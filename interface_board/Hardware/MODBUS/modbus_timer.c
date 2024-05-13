@@ -58,7 +58,7 @@ void TIM3_IRQHandler(void)   //TIM3中断
 //		  }		
 //	     }
 		 modbus.Host_Sendtime++;//发送完上一帧后的时间计数
-		 if(modbus.Host_Sendtime>1000)//距离发送上一帧数据1s了
+		 if(modbus.Host_Sendtime>modbus.interval)//距离发送上一帧数据1s了
 			{
 					modbus.Host_time_flag=1;			
 			}

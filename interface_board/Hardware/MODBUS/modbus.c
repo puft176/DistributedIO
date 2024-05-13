@@ -23,7 +23,10 @@ void Modbus_Init()
 	modbus.myadd = 0x01;  //本机设备地址为1
 	modbus.timrun = 0;    //modbus定时器停止计算
 	modbus.slave_add=0x01;//作为主机时要匹配的从机地址
+	modbus.interval = 1000;//报文收发间隔
 }
+
+/*以下为公共功能码*/
 
 /**
   * 函  数：Modbus 1号功能码函数，对1-9999地址的随机读访问
@@ -54,15 +57,15 @@ void Modbus_Func1()
 	modbus.sendbuf[i++] = crc%256;//校验位低位
 	//数据包打包完成
 	// 开始返回Modbus数据
-	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	while(modbus.Host_time_flag == 0);	//等待设定的收发间隔
 	modbus.Host_time_flag=0;
-	modbus.Host_Sendtime=0;//计时标志位清零
+	modbus.Host_Sendtime=0;				//计时标志位清零
 	//发送重新使能
-	RS485_TX_ENABLE;//使能485控制端(启动发送) 
-	DMA_TX_Enable(5+2*Reglen);//发送重新使能,重装发送数据个数,此时数据已经开始发送
-	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
-//	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
-	RS485_RX_ENABLE;//开启接收
+	RS485_TX_ENABLE;								//使能485控制端(启动发送)
+	DMA_TX_Enable(5+2*Reglen);						//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);	//如果返回值位reset表示还未传输成功//等待发送完毕
+//	Delay_ms(5);									//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;								//开启接收
 	//接收重新使能
 	DMA_RX_Enable();
 }
@@ -361,6 +364,82 @@ void Modbus_Func16()
 		DMA_RX_Enable();
 }
 
+/*以下为自定义功能码*/
+/**
+  * 函  数：65号自定义功能码，配置串口的通信波特率为4800/9600/38400/115200
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func65(void)
+{
+	u32 bound;
+	
+	switch(modbus.rcbuf2[2])
+	{
+		case 1: bound = 4800;	break; 
+		case 2: bound = 9600;	break; 
+		case 3: bound = 38400;	break; 
+		case 4: bound = 115200;	break;
+	}
+
+	modbus.sendbuf[0]=modbus.rcbuf2[0];//本设备地址
+	modbus.sendbuf[1]=modbus.rcbuf2[1];  //功能码 
+	modbus.sendbuf[2]=modbus.rcbuf2[2];//写入的地址
+	modbus.sendbuf[3]=modbus.rcbuf2[3];
+	modbus.sendbuf[4]=modbus.rcbuf2[4];
+	//数据发送包打包完毕
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
+	
+	RS485_TX_ENABLE;		//使能485控制端(启动发送) 
+	DMA_TX_Enable(5);		//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//		Delay_ms(5);			//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;		//失能485控制端（改为接收）
+	//接收重新使能
+	DMA_RX_Enable();
+	
+	NVIC_Configuration(); 	 					//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
+	uart_init(bound);							//串口1初始化为9600（只用来打印测试数据）
+	USART_DMACmd(USART1,USART_DMAReq_Tx,ENABLE);//开启使能
+	USART_DMACmd(USART1,USART_DMAReq_Rx,ENABLE);//开启使能
+	
+}
+
+
+/**
+  * 函  数：66号自定义功能码，设定报文收发间隔时间
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func66(void)
+{
+	modbus.interval = modbus.rcbuf2[2]*255 + modbus.rcbuf2[3];
+	
+	modbus.sendbuf[0]=modbus.rcbuf2[0];//本设备地址
+	modbus.sendbuf[1]=modbus.rcbuf2[1];  //功能码 
+	modbus.sendbuf[2]=modbus.rcbuf2[2];//写入的地址
+	modbus.sendbuf[3]=modbus.rcbuf2[3];
+	modbus.sendbuf[4]=modbus.rcbuf2[4];
+	modbus.sendbuf[5]=modbus.rcbuf2[5];
+	//数据发送包打包完毕
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
+	
+	RS485_TX_ENABLE;		//使能485控制端(启动发送) 
+	DMA_TX_Enable(6);		//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//		Delay_ms(5);			//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;		//失能485控制端（改为接收）
+	//接收重新使能
+	DMA_RX_Enable();
+}
+
+
+
+
 /*****************************
 Modbus事件处理函数
 只有当数据接收完毕时才进行数据处理
@@ -404,6 +483,8 @@ void Modbus_Event()
 				 case 8:             break;
 				 case 15:     Modbus_Func15();		 break;
 				 case 16:     Modbus_Func16();		break;//写入多个寄存器数据
+			     case 65:	  Modbus_Func65();		break;
+			     case 66:     Modbus_Func66();		break;
 			 }
 		 }
 		 else if(modbus.rcbuf2[0] == 0) //广播地址不予回应

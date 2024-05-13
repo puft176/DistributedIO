@@ -19,13 +19,15 @@ typedef struct
 	u8  timrun;       //modbus定时器是否计时标志
 	u8  reflag;       //modbus一帧数据接受完成标志位
 	volatile u8  sendbuf[100]; //modbus发送缓冲区
-	
-	//作为主机添加部分
-	volatile u8 Host_Txbuf[8];	//modbus发送数组
-	u8 slave_add;		//要匹配的从机设备地址（做主机实验时使用）
-	u8 Host_send_flag;  //主机设备发送数据完毕标志位
+	u16 interval;	  //报文收发间隔时间
 	int Host_Sendtime;  //发送完一帧数据后时间计数
 	u8 Host_time_flag;  //发送时间到标志位，=1表示到发送数据时间了
+	
+	
+	//作为主机添加部分
+	u8 Host_send_flag;  //主机设备发送数据完毕标志位
+	volatile u8 Host_Txbuf[8];	//modbus发送数组
+	u8 slave_add;		//要匹配的从机设备地址（做主机实验时使用）
 	u8 Host_End;		//接收数据后处理完毕
 }MODBUS;
 
@@ -55,6 +57,8 @@ void Modbus_Func5(void);
 void Modbus_Func6(void);//往1个寄存器中写入数据
 void Modbus_Func15(void);
 void Modbus_Func16(void);//往多个寄存器中写入数据
+void Modbus_Func65(void);
+void Modbus_Func66(void);
 void Modbus_Event(void);
 
 

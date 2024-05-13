@@ -26,6 +26,90 @@ void Modbus_Init()
 }
 
 /**
+  * 函  数：Modbus 1号功能码函数，对1-9999地址的随机读访问
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func1()
+{
+    u16 Regadd,Reglen,crc;
+	u8 i,j;
+	//得到要读取寄存器的首地址 0~65535
+	Regadd = modbus.rcbuf2[2]*256+modbus.rcbuf2[3];//读取的首地址
+	//得到要读取寄存器的数据长度 0~65535
+	Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
+	//发送回应数据包
+	i = 0;
+	modbus.sendbuf[i++] = modbus.myadd;      //ID号：发送本机设备地址
+	modbus.sendbuf[i++] = 0x02;              //发送功能码
+	modbus.sendbuf[i++] = ((Reglen*2)%256);  //返回字节个数
+	for(j=0;j<Reglen;j++)					 //返回数据
+	{
+		//reg是提前定义好的16位数组（模仿寄存器）
+		modbus.sendbuf[i++] = Reg0[Regadd+j]/256;//高位数据
+		modbus.sendbuf[i++] = Reg0[Regadd+j]%256;//低位数据
+	}
+	crc = Modbus_CRC16(modbus.sendbuf,i);    //计算要返回数据的CRC
+	modbus.sendbuf[i++] = crc/256;//校验位高位
+	modbus.sendbuf[i++] = crc%256;//校验位低位
+	//数据包打包完成
+	// 开始返回Modbus数据
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
+	//发送重新使能
+	RS485_TX_ENABLE;//使能485控制端(启动发送) 
+	DMA_TX_Enable(5+2*Reglen);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;//开启接收
+	//接收重新使能
+	DMA_RX_Enable();
+}
+
+/**
+  * 函  数：Modbus 2号功能码函数，对10001-19999地址的随机读访问
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func2()
+{
+    u16 Regadd,Reglen,crc;
+	u8 i,j;
+	//得到要读取寄存器的首地址 0~65535
+	Regadd = modbus.rcbuf2[2]*256+modbus.rcbuf2[3];//读取的首地址
+	//得到要读取寄存器的数据长度 0~65535
+	Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
+	//发送回应数据包
+	i = 0;
+	modbus.sendbuf[i++] = modbus.myadd;      //ID号：发送本机设备地址
+	modbus.sendbuf[i++] = 0x02;              //发送功能码
+	modbus.sendbuf[i++] = ((Reglen*2)%256);  //返回字节个数
+	for(j=0;j<Reglen;j++)					 //返回数据
+	{
+		//reg是提前定义好的16位数组（模仿寄存器）
+		modbus.sendbuf[i++] = Reg1[Regadd+j]/256;//高位数据
+		modbus.sendbuf[i++] = Reg1[Regadd+j]%256;//低位数据
+	}
+	crc = Modbus_CRC16(modbus.sendbuf,i);    //计算要返回数据的CRC
+	modbus.sendbuf[i++] = crc/256;//校验位高位
+	modbus.sendbuf[i++] = crc%256;//校验位低位
+	//数据包打包完成
+	// 开始返回Modbus数据
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
+	//发送重新使能
+	RS485_TX_ENABLE;//使能485控制端(启动发送) 
+	DMA_TX_Enable(5+2*1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;//开启接收
+	//接收重新使能
+	DMA_RX_Enable();
+}
+
+/**
   * 函  数：Modbus 3号功能码函数，对40001-49999地址的随机读访问
   * 参  数：无
   * 返回值：无
@@ -35,9 +119,9 @@ void Modbus_Func3()
     u16 Regadd,Reglen,crc;
 	u8 i,j;
 	//得到要读取寄存器的首地址 0~65535
-	Regadd = modbus.rcbuf[2]*256+modbus.rcbuf[3];//读取的首地址
+	Regadd = modbus.rcbuf2[2]*256+modbus.rcbuf2[3];//读取的首地址
 	//得到要读取寄存器的数据长度 0~65535
-	Reglen = modbus.rcbuf[4]*256+modbus.rcbuf[5];//读取的寄存器个数
+	Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
 	//发送回应数据包
 	i = 0;
 	modbus.sendbuf[i++] = modbus.myadd;      //ID号：发送本机设备地址
@@ -59,14 +143,94 @@ void Modbus_Func3()
 	modbus.Host_Sendtime=0;//计时标志位清零
 	//发送重新使能
 	RS485_TX_ENABLE;//使能485控制端(启动发送) 
-	DMA_TX_Enable(5+2*1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	DMA_TX_Enable(5+2*Reglen);//发送重新使能,重装发送数据个数,此时数据已经开始发送
 	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
-	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+//	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
 	RS485_RX_ENABLE;//开启接收
 	//接收重新使能
 	DMA_RX_Enable();
 }
 
+/**
+  * 函  数：Modbus 4号功能码函数，对30001-39999地址的随机读访问
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func4()
+{
+    u16 Regadd,Reglen,crc;
+	u8 i,j;
+	//得到要读取寄存器的首地址 0~65535
+	Regadd = modbus.rcbuf2[2]*256+modbus.rcbuf2[3];//读取的首地址
+	//得到要读取寄存器的数据长度 0~65535
+	Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
+	//发送回应数据包
+	i = 0;
+	modbus.sendbuf[i++] = modbus.myadd;      //ID号：发送本机设备地址
+	modbus.sendbuf[i++] = 0x04;              //发送功能码
+	modbus.sendbuf[i++] = ((Reglen*2)%256);  //返回字节个数
+	for(j=0;j<Reglen;j++)					 //返回数据
+	{
+		//reg是提前定义好的16位数组（模仿寄存器）
+		modbus.sendbuf[i++] = Reg3[Regadd+j]/256;//高位数据
+		modbus.sendbuf[i++] = Reg3[Regadd+j]%256;//低位数据
+	}
+	crc = Modbus_CRC16(modbus.sendbuf,i);    //计算要返回数据的CRC
+	modbus.sendbuf[i++] = crc/256;//校验位高位
+	modbus.sendbuf[i++] = crc%256;//校验位低位
+	//数据包打包完成
+	// 开始返回Modbus数据
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;//计时标志位清零
+	//发送重新使能
+	RS485_TX_ENABLE;//使能485控制端(启动发送) 
+	DMA_TX_Enable(5+2*Reglen);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;//开启接收
+	//接收重新使能
+	DMA_RX_Enable();
+}
+
+/**
+  * 函  数：Modbus 5号功能码函数，对1-9999地址的随机写访问
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func5()
+{
+	u16 Regadd; //地址16位
+	u16 val;	//值
+	u16 i,crc;
+	i=0;
+	Regadd=modbus.rcbuf2[2]*256+modbus.rcbuf2[3];  //得到要修改的地址 
+	val=modbus.rcbuf2[4]*256+modbus.rcbuf2[5];     //修改后的值（要写入的数据）
+	Reg0[Regadd]=val;  //修改本设备相应的寄存器
+	
+	//以下为回应主机
+	modbus.sendbuf[i++]=modbus.myadd;//本设备地址
+	modbus.sendbuf[i++]=0x05;        //功能码 
+	modbus.sendbuf[i++]=Regadd/256;  //写入的地址
+	modbus.sendbuf[i++]=Regadd%256;
+	modbus.sendbuf[i++]=val/256;	 //写入的数值
+	modbus.sendbuf[i++]=val%256;
+	crc=Modbus_CRC16(modbus.sendbuf,i);//获取crc校验位
+	modbus.sendbuf[i++]=crc/256;  	   //crc校验位加入包中
+	modbus.sendbuf[i++]=crc%256;
+	//数据发送包打包完毕
+	while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+	modbus.Host_time_flag=0;
+	modbus.Host_Sendtime=0;			//计时标志位清零
+	
+	RS485_TX_ENABLE;;	//使能485控制端(启动发送) 
+	DMA_TX_Enable(8);	//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//	Delay_ms(5);		//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+	RS485_RX_ENABLE;	//失能485控制端（改为接收）
+	//接收重新使能
+	DMA_RX_Enable();
+}
 
 /**
   * 函  数：Modbus 6号功能码函数，对40001-49999地址的随机写访问
@@ -79,8 +243,8 @@ void Modbus_Func6()
 	u16 val;	//值
 	u16 i,crc;
 	i=0;
-	Regadd=modbus.rcbuf[2]*256+modbus.rcbuf[3];  //得到要修改的地址 
-	val=modbus.rcbuf[4]*256+modbus.rcbuf[5];     //修改后的值（要写入的数据）
+	Regadd=modbus.rcbuf2[2]*256+modbus.rcbuf2[3];  //得到要修改的地址 
+	val=modbus.rcbuf2[4]*256+modbus.rcbuf2[5];     //修改后的值（要写入的数据）
 	Reg4[Regadd]=val;  //修改本设备相应的寄存器
 	
 	//以下为回应主机
@@ -108,6 +272,51 @@ void Modbus_Func6()
 }
 
 /**
+  * 函  数：功能码15 0x0F，对1-9999地址的随机写访问，访问长度2-120
+  * 参  数：无
+  * 返回值：无
+  */
+void Modbus_Func15()
+{
+		u16 Regadd;//地址16位
+		u16 Reglen;
+		u16 i,crc;
+		
+		Regadd=modbus.rcbuf2[2]*256+modbus.rcbuf2[3];  //要修改内容的起始地址
+		Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
+		for(i=0;i<Reglen;i++)//往寄存器中写入数据
+		{
+			//接收数组的第七位开始是数据
+			Reg0[Regadd+i]=modbus.rcbuf2[7+i*2]*256+modbus.rcbuf2[8+i*2];//对寄存器一次写入数据
+		}
+		//写入数据完毕，接下来需要进行打包回复数据了
+		
+		//以下为回应主机内容
+		//内容=接收数组的前6位+两位的校验位
+		modbus.sendbuf[0]=modbus.rcbuf2[0];//本设备地址
+		modbus.sendbuf[1]=modbus.rcbuf2[1];  //功能码 
+		modbus.sendbuf[2]=modbus.rcbuf2[2];//写入的地址
+		modbus.sendbuf[3]=modbus.rcbuf2[3];
+		modbus.sendbuf[4]=modbus.rcbuf2[4];
+		modbus.sendbuf[5]=modbus.rcbuf2[5];
+		crc=Modbus_CRC16(modbus.sendbuf,6);//获取crc校验位
+		modbus.sendbuf[6]=crc/256;  //crc校验位加入包中
+		modbus.sendbuf[7]=crc%256;
+		//数据发送包打包完毕
+		while(modbus.Host_time_flag == 0);//等待设定的收发间隔
+		modbus.Host_time_flag=0;
+		modbus.Host_Sendtime=0;//计时标志位清零
+		
+		RS485_TX_ENABLE;		//使能485控制端(启动发送) 
+		DMA_TX_Enable(8);		//发送重新使能,重装发送数据个数,此时数据已经开始发送
+		while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
+//		Delay_ms(5);			//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
+		RS485_RX_ENABLE;		//失能485控制端（改为接收）
+		//接收重新使能
+		DMA_RX_Enable();
+}
+
+/**
   * 函  数：功能码16 0x10，对40001-49999地址的随机写访问，访问长度2-120
   * 参  数：无
   * 返回值：无
@@ -118,23 +327,23 @@ void Modbus_Func16()
 		u16 Reglen;
 		u16 i,crc;
 		
-		Regadd=modbus.rcbuf[2]*256+modbus.rcbuf[3];  //要修改内容的起始地址
-		Reglen = modbus.rcbuf[4]*256+modbus.rcbuf[5];//读取的寄存器个数
+		Regadd=modbus.rcbuf2[2]*256+modbus.rcbuf2[3];  //要修改内容的起始地址
+		Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
 		for(i=0;i<Reglen;i++)//往寄存器中写入数据
 		{
 			//接收数组的第七位开始是数据
-			Reg4[Regadd+i]=modbus.rcbuf[7+i*2]*256+modbus.rcbuf[8+i*2];//对寄存器一次写入数据
+			Reg4[Regadd+i]=modbus.rcbuf2[7+i*2]*256+modbus.rcbuf2[8+i*2];//对寄存器一次写入数据
 		}
 		//写入数据完毕，接下来需要进行打包回复数据了
 		
 		//以下为回应主机内容
 		//内容=接收数组的前6位+两位的校验位
-		modbus.sendbuf[0]=modbus.rcbuf[0];//本设备地址
-		modbus.sendbuf[1]=modbus.rcbuf[1];  //功能码 
-		modbus.sendbuf[2]=modbus.rcbuf[2];//写入的地址
-		modbus.sendbuf[3]=modbus.rcbuf[3];
-		modbus.sendbuf[4]=modbus.rcbuf[4];
-		modbus.sendbuf[5]=modbus.rcbuf[5];
+		modbus.sendbuf[0]=modbus.rcbuf2[0];//本设备地址
+		modbus.sendbuf[1]=modbus.rcbuf2[1];  //功能码 
+		modbus.sendbuf[2]=modbus.rcbuf2[2];//写入的地址
+		modbus.sendbuf[3]=modbus.rcbuf2[3];
+		modbus.sendbuf[4]=modbus.rcbuf2[4];
+		modbus.sendbuf[5]=modbus.rcbuf2[5];
 		crc=Modbus_CRC16(modbus.sendbuf,6);//获取crc校验位
 		modbus.sendbuf[6]=crc/256;  //crc校验位加入包中
 		modbus.sendbuf[7]=crc%256;
@@ -174,31 +383,30 @@ void Modbus_Event()
 	//收到数据包(接收完成)
 	//通过读到的数据帧计算CRC
 	//参数1是数组首地址，参数2是要计算的长度（除了CRC校验位其余全算）
-	crc = Modbus_CRC16(&modbus.rcbuf[0],modbus.recount-2); //获取CRC校验位
+	crc = Modbus_CRC16(&modbus.rcbuf2[0],modbus.recount-2); //获取CRC校验位
 	// 读取数据帧的CRC
-	rccrc = modbus.rcbuf[modbus.recount-2]*256+modbus.rcbuf[modbus.recount-1];//计算读取的CRC校验位
+	rccrc = modbus.rcbuf2[modbus.recount-2]*256+modbus.rcbuf2[modbus.recount-1];//计算读取的CRC校验位
 	//等价于下面这条语句
 	//rccrc=modbus.rcbuf[modbus.recount-1]|(((u16)modbus.rcbuf[modbus.recount-2])<<8);//获取接收到的CRC
 	if(crc == rccrc) //CRC检验成功 开始分析包
 	{	
-		LED1_ON();
 	   if(modbus.rcbuf[0] == modbus.myadd)  // 检查地址是否时自己的地址
 		 {
 			 
 		   switch(modbus.rcbuf[1])   //分析modbus功能码
 			 {
-				 case 1:             break;
-				 case 2:             break;
-				 case 3:      Modbus_Func3();     break;//这是读取寄存器的数据
-				 case 4:             break;
-				 case 5:             break;
-				 case 6:      Modbus_Func6();      break;//这是写入单个寄存器数据
+				 case 1:      Modbus_Func1();		break;
+				 case 2:      Modbus_Func2();		break;
+				 case 3:      Modbus_Func3();		break;//这是读取寄存器的数据
+				 case 4:      Modbus_Func4();		break;
+				 case 5:      Modbus_Func5();       break;
+				 case 6:      Modbus_Func6();		break;//这是写入单个寄存器数据
 				 case 8:             break;
-				 case 15:     		 break;
-				 case 16:     Modbus_Func16(); 			break;//写入多个寄存器数据
+				 case 15:     Modbus_Func15();		 break;
+				 case 16:     Modbus_Func16();		break;//写入多个寄存器数据
 			 }
 		 }
-		 else if(modbus.rcbuf[0] == 0) //广播地址不予回应
+		 else if(modbus.rcbuf2[0] == 0) //广播地址不予回应
 		 {
 		    
 		 }	 

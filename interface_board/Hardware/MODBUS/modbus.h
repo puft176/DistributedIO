@@ -47,8 +47,13 @@ typedef struct
 extern MODBUS modbus;
 extern u16 Reg0[100],Reg1[100],Reg3[100],Reg4[100];
 void Modbus_Init(void);
+void Modbus_Func1(void);
+void Modbus_Func2(void);
 void Modbus_Func3(void);//读寄存器数据
+void Modbus_Func4(void);
+void Modbus_Func5(void);
 void Modbus_Func6(void);//往1个寄存器中写入数据
+void Modbus_Func15(void);
 void Modbus_Func16(void);//往多个寄存器中写入数据
 void Modbus_Event(void);
 

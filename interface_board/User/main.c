@@ -9,6 +9,7 @@
 #include "rs485.h"
 #include "modbus.h"
 #include "dma.h"
+#include "MyCAN.h"
 
 
 int main(void)
@@ -42,7 +43,7 @@ int main(void)
 //				 LED1=1;
 		 }
 //			LED4=~LED4;
-		 Delay_ms(100);
+//		 Delay_ms(100);
 	}
 }
 

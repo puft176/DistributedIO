@@ -336,7 +336,7 @@
               <MiscControls>--diag_suppress=167</MiscControls>
               <Define>USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>.\Start;.\Library;.\User;.\System;.\Hardware;.\Hardware\MODBUS;.\Hardware\RS485;.\Hardware\usart;.\Hardware\usart;.\Hardware\DMA</IncludePath>
+              <IncludePath>.\Start;.\Library;.\User;.\System;.\Hardware;.\Hardware\MODBUS;.\Hardware\RS485;.\Hardware\usart;.\Hardware\DMA;.\Hardware\can</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -774,6 +774,16 @@
               <FileName>dma.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Hardware\DMA\dma.h</FilePath>
+            </File>
+            <File>
+              <FileName>MyCAN.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\can\MyCAN.c</FilePath>
+            </File>
+            <File>
+              <FileName>MyCAN.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\can\MyCAN.h</FilePath>
             </File>
           </Files>
         </Group>

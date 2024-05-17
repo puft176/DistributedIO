@@ -55,8 +55,15 @@ void TIM3_IRQHandler(void)   //TIM3中断
 //			
 //				modbus.timout=0;
 //				modbus.Host_out_flag=1;//超时未接收到数据重新发送数据
-//		  }		
+//		  }
 //	     }
+		if(modbus.reflag == 1){
+			modbus.Sendtime++;//接收到数据后时间计数
+		}
+		if(modbus.Sendtime>modbus.interval)//距离接收到数据的时间达到设定间隔了
+		{
+				modbus.time_flag=1;
+		}
 		 modbus.Host_Sendtime++;//发送完上一帧后的时间计数
 		 if(modbus.Host_Sendtime>modbus.interval)//距离发送上一帧数据1s了
 			{

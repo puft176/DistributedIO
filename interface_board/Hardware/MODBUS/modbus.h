@@ -20,6 +20,8 @@ typedef struct
 	u8  reflag;       //modbus一帧数据接受完成标志位
 	volatile u8  sendbuf[100]; //modbus发送缓冲区
 	u16 interval;	  //报文收发间隔时间
+	int Sendtime;  		//从机接收到数据后时间计数
+	u8 time_flag;  //发送时间到标志位，=1表示到发送数据时间了
 	int Host_Sendtime;  //发送完一帧数据后时间计数
 	u8 Host_time_flag;  //发送时间到标志位，=1表示到发送数据时间了
 	
@@ -57,8 +59,6 @@ void Modbus_Func5(void);
 void Modbus_Func6(void);//往1个寄存器中写入数据
 void Modbus_Func15(void);
 void Modbus_Func16(void);//往多个寄存器中写入数据
-void Modbus_Func65(void);
-void Modbus_Func66(void);
 void Modbus_Event(void);
 
 

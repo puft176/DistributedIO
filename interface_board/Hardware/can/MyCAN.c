@@ -1,4 +1,5 @@
 #include "stm32f10x.h"                  // Device header
+#include "led.h"
 
 void MyCAN_Init(void)
 {
@@ -62,9 +63,32 @@ void MyCAN_Transmit(uint32_t ID, uint8_t Length, uint8_t *Data)
 	{
 		TxMessage.Data[i] = Data[i];
 	}
+	
 	uint8_t TransmitMailbox = CAN_Transmit(CAN1, &TxMessage);
+	
+	while (CAN_TransmitStatus(CAN1, TransmitMailbox) != CAN_TxStatus_Ok);
+	LED1_ON();
+}
+
+/**
+  * 函  数：can1遥控函数
+  * 参  数：ID：can发送报文的ID
+  * 参  数：Length：请求的数据的字节数（0~8）
+  * 返回值：无
+  */
+void MyCAN_ASK(uint32_t ID, uint8_t Length)
+{
+	CanTxMsg TxMessage;
+	TxMessage.StdId = ID;			//标准标识符
+	TxMessage.ExtId = ID;			//拓展标识符
+	TxMessage.IDE = CAN_Id_Standard;//帧模式（标准帧或拓展帧）
+	TxMessage.RTR = CAN_RTR_Remote;	//帧类型（数据帧或遥控帧）
+	TxMessage.DLC = Length;			//数据长度
+	uint8_t TransmitMailbox = CAN_Transmit(CAN1, &TxMessage);
+	
 	while (CAN_TransmitStatus(CAN1, TransmitMailbox) != CAN_TxStatus_Ok);
 }
+
 
 uint8_t MyCAN_ReceiveFlag(void)
 {

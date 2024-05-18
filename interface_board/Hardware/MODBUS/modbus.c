@@ -3,8 +3,16 @@
 #include "delay.h"
 #include "led.h"
 #include "dma.h"
+#include "MyCAN.h"
 MODBUS modbus;//结构体变量
 
+uint32_t TxID = 0x01;
+uint8_t TxLength = 8;
+uint8_t TxData[] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08};
+
+uint32_t RxID;
+uint8_t RxLength;
+uint8_t RxData[8];
 
 /*作为从机部分的代码*/
 //开关量寄存器 0x0000 为OFF，0xFF00 为ON，其他所有值均为非法
@@ -77,10 +85,20 @@ void Modbus_Func2()
 {
     u16 Regadd,Reglen,crc;
 	u8 i,j;
+	MyCAN_ASK(0x03,8);
+	
+	while(MyCAN_ReceiveFlag() == 0);
+	
+	MyCAN_Receive(&RxID, &RxLength, RxData);
+	for(i=0;i<8;i++){
+		Reg1[i+1] = RxData[i];
+	}
+	
 	//得到要读取寄存器的首地址 0~65535
 	Regadd = modbus.rcbuf2[2]*256+modbus.rcbuf2[3];//读取的首地址
 	//得到要读取寄存器的数据长度 0~65535
 	Reglen = modbus.rcbuf2[4]*256+modbus.rcbuf2[5];//读取的寄存器个数
+	
 	//发送回应数据包
 	i = 0;
 	modbus.sendbuf[i++] = modbus.myadd;      //ID号：发送本机设备地址
@@ -100,7 +118,7 @@ void Modbus_Func2()
 	while(modbus.time_flag == 0);//等待设定的收发间隔
 	//发送重新使能
 	RS485_TX_ENABLE;//使能485控制端(启动发送) 
-	DMA_TX_Enable(5+2*1);//发送重新使能,重装发送数据个数,此时数据已经开始发送
+	DMA_TX_Enable(5+2*Reglen);//发送重新使能,重装发送数据个数,此时数据已经开始发送
 	while(DMA_GetFlagStatus(DMA1_FLAG_TC4)==RESET);//如果返回值位reset表示还未传输成功//等待发送完毕
 //	Delay_ms(5);//如果不加这个延时将丢失最后两个字节数据（实验后发现没有丢失，后续有需要可以去掉）
 	RS485_RX_ENABLE;//开启接收
@@ -198,12 +216,19 @@ void Modbus_Func5()
 	u16 Regadd; //地址16位
 	u16 val;	//值
 	u16 i,crc;
-	i=0;
 	Regadd=modbus.rcbuf2[2]*256+modbus.rcbuf2[3];  //得到要修改的地址 
 	val=modbus.rcbuf2[4]*256+modbus.rcbuf2[5];     //修改后的值（要写入的数据）
 	Reg0[Regadd]=val;  //修改本设备相应的寄存器
 	
+	/*将输出命令发送给输出板*/
+	for(i=0;i<8;i++){
+		TxData[i] = Reg0[i+1];
+	}
+	MyCAN_Transmit(0x02,TxLength,TxData);
+	
+	
 	//以下为回应主机
+	i=0;
 	modbus.sendbuf[i++]=modbus.myadd;//本设备地址
 	modbus.sendbuf[i++]=0x05;        //功能码 
 	modbus.sendbuf[i++]=Regadd/256;  //写入的地址
@@ -308,6 +333,13 @@ void Modbus_Func15()
 		//接收数组的第七位开始是数据
 		Reg0[Regadd+i]=modbus.rcbuf2[7+i*2]*256+modbus.rcbuf2[8+i*2];//对寄存器一次写入数据
 	}
+	
+	/*将输出命令发送给输出板*/
+	for(i=0;i<8;i++){
+		TxData[i] = Reg0[i+1];
+	}
+	MyCAN_Transmit(0x02,TxLength,TxData);
+	
 	//写入数据完毕，接下来需要进行打包回复数据了
 	
 	//以下为回应主机内容

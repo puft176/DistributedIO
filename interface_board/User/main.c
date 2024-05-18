@@ -11,15 +11,16 @@
 #include "dma.h"
 #include "MyCAN.h"
 
-
 int main(void)
 {
 //	int i=sl_ID ;					//第一个从机地址
 	NVIC_Configuration(); 	 //设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	uart_init(9600);	 //串口1初始化为9600（只用来打印测试数据）
 
+	OLED_Init();
 	LED_Init();			     //LED端口初始化
 	Key_Init();          //初始化与按键连接的硬件接口
+	MyCAN_Init();
 	
 	
 	USART1_DMA_TX_config();//DMA发送初始化

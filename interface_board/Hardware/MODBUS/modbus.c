@@ -85,13 +85,18 @@ void Modbus_Func2()
 {
     u16 Regadd,Reglen,crc;
 	u8 i,j;
-	MyCAN_ASK(0x03,8);
+	MyCAN_ASK(0x03,8);	//向数字量输入板请求数据
 	
-	while(MyCAN_ReceiveFlag() == 0);
+	while(MyCAN_ReceiveFlag() == 0);	//等待数字量输入板的数据
 	
-	MyCAN_Receive(&RxID, &RxLength, RxData);
-	for(i=0;i<8;i++){
-		Reg1[i+1] = RxData[i];
+	MyCAN_Receive(&RxID, &RxLength, RxData);	//接收数据
+	for(i=0;i<8;i++){	//将数据写入寄存器
+		if(RxData[i]){
+			Reg1[i+1] = 0xFF00;
+		}
+		else{
+			Reg1[i+1] = 0x0000;
+		}
 	}
 	
 	//得到要读取寄存器的首地址 0~65535
@@ -222,7 +227,13 @@ void Modbus_Func5()
 	
 	/*将输出命令发送给输出板*/
 	for(i=0;i<8;i++){
-		TxData[i] = Reg0[i+1];
+		if(Reg0[i+1]){
+			TxData[i] = 0x01;
+		}
+		else{
+			TxData[i] = 0x00;
+		}
+		
 	}
 	MyCAN_Transmit(0x02,TxLength,TxData);
 	
@@ -336,7 +347,13 @@ void Modbus_Func15()
 	
 	/*将输出命令发送给输出板*/
 	for(i=0;i<8;i++){
-		TxData[i] = Reg0[i+1];
+		if(Reg0[i+1]){
+			TxData[i] = 0x01;
+		}
+		else{
+			TxData[i] = 0x00;
+		}
+		
 	}
 	MyCAN_Transmit(0x02,TxLength,TxData);
 	

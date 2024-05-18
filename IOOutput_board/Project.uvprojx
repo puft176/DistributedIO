@@ -700,6 +700,26 @@
               <FileType>5</FileType>
               <FilePath>.\Hardware\OLED_Font.h</FilePath>
             </File>
+            <File>
+              <FileName>MyCAN.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\MyCAN.c</FilePath>
+            </File>
+            <File>
+              <FileName>MyCAN.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\MyCAN.h</FilePath>
+            </File>
+            <File>
+              <FileName>IOOutput.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\IOOutput.c</FilePath>
+            </File>
+            <File>
+              <FileName>IOOutput.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\IOOutput.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

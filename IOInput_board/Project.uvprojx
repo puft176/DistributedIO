@@ -710,6 +710,16 @@
               <FileType>5</FileType>
               <FilePath>.\Hardware\MyCAN.h</FilePath>
             </File>
+            <File>
+              <FileName>IOInput.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\IOInput.c</FilePath>
+            </File>
+            <File>
+              <FileName>IOInput.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\IOInput.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
